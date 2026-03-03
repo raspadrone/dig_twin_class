@@ -1,0 +1,90 @@
+---
+
+# 🚀 Quick Start Guide: 2DOF Digital Twin
+
+This repository contains the stabilized Digital Twin control loop for the 2DOF Testbench. It brings up the physical simulation, message broker, and time-series database, and runs a continuous 10Hz control loop that calculates real-time stiffness via a Kalman Filter.
+
+## Prerequisites
+
+* Docker Desktop with Compose v2
+* Python 3.11+
+
+## 🛠️ Step 1: Start the Core Infrastructure
+
+First, we need to boot up RabbitMQ, InfluxDB, and the Mockup Server.
+
+1. Ensure you have created your `startup.conf` file (copied from `startup_template.conf`).
+2. Open a terminal in the project root and run:
+```bash
+docker compose up --build -d
+
+```
+
+
+3. Wait about 10-15 seconds, then verify everything is running and healthy:
+```bash
+docker compose ps
+
+```
+
+
+
+## 🐍 Step 2: Set Up Python Environment
+
+If this is your first time running the project, set up your virtual environment:
+
+**Windows (PowerShell):**
+
+```powershell
+python -m venv .venv
+./.venv/Scripts/Activate.ps1
+pip install -r requirements.txt
+
+```
+
+**Linux/macOS:**
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+
+```
+
+*(Note: Ensure your InfluxDB `token` in `startup.conf` matches your local database instance.)*
+
+## 🧠 Step 3: Run the Digital Twin Brain
+
+Our custom script (`run_twin.py`) acts as the continuous controller. It injects a safe 0.05N sine-wave force, polls the sensors, runs the Kalman filter, and pushes telemetry to InfluxDB at 10Hz.
+
+Run the script:
+
+```bash
+python run_twin.py
+
+```
+
+*You should immediately see a terminal feed logging time, force, position (`x`), and estimated stiffness (`k_est`).*
+
+## 📊 Step 4: View the Real-Time Dashboard
+
+1. Open your browser and navigate to `http://localhost:8086`.
+2. Go to the Data Explorer.
+3. Query the `testbench` bucket, filter by the `twin_telemetry` measurement, and select the `estimated_stiffness` and `filtered_position` fields.
+4. Set the graph to auto-refresh every 5 seconds to watch the continuous sine wave live!
+
+## ⚠️ CRITICAL WARNINGS
+
+* **DO NOT OVERLOAD THE PHYSICS ENGINE:** The Mockup container expects micro-forces. The script is currently set to an amplitude of `0.05N`. If you push this above `1.0N`, the simulated position will shoot to infinity, the physics engine will crash, and the script will timeout.
+* **HOW TO RESET:** If the script hangs or stops receiving data, the Mockup server has likely crashed. Stop the Python script (`Ctrl+C`) and reset the Docker stack:
+```bash
+docker compose down
+docker compose up -d
+
+```
+
+
+
+---
+
+How does that look? It gives them the exact roadmap to replicate your success. Let me know when you are ready to tackle the anomaly detection!
